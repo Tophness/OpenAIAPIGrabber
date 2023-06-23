@@ -24,6 +24,7 @@ class OpenAIChat:
         self.user_data_dir = os.getenv('LOCALAPPDATA') + '\\Google\\Chrome\\User Data\\Default'
         self.access_token = None
         self.cookie = None
+        self.lastReply = None
 
     def save_config(self):
         config = configparser.ConfigParser()
@@ -132,6 +133,10 @@ class OpenAIChat:
                 return
         self.data.append({'message_id': message_id, 'messages': [{'parent_thread_id': parent_thread_id, 'message': message}]})
         self.save_data()
+        self.lastReply = {'message_id': message_id, 'parent_thread_id': parent_thread_id, 'message': message}
+
+    def replyLast(self, prompt):
+        return self.reply(prompt, self.lastReply['parent_thread_id'], self.lastReply['message_id'])
 
     def reply_to_message(self, prompt, parent_thread_id, message_id):
         for thread in self.data:
@@ -203,7 +208,7 @@ class OpenAIChat:
                 self.login()
                 return self.reply(prompt, id, conversation_id, True)
 
-    def chat(self, prompt, autoDelete=True, retry=False):
+    def chat(self, prompt, autoDelete=False, retry=False):
         headers = {
             'Authorization': f'Bearer {self.access_token}',
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36',
@@ -260,7 +265,7 @@ class OpenAIChat:
         self.access_token, self.cookie = chatToken.login()
         self.save_config()
 
-    def start(self, prompt, autoDelete=True):
+    def start(self, prompt, autoDelete=False):
         self.load_config()
         if not self.email or not self.password:
             self.email = input("Enter your email: ")
