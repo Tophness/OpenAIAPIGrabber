@@ -14,6 +14,7 @@ setup(
         'selenium==4.10.0',
         'undetected-chromedriver==3.5.0',
         'requests==2.31.0',
+        'PyYAML==6.0'
     ],
     classifiers=[
         'Development Status :: 3 - Alpha',
