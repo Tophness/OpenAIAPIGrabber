@@ -32,14 +32,13 @@ Here's an example of how to use the `OpenAIChat` class from OpenAIAPIGrabber:
 from OpenAIAPIGrabber.chat import OpenAIChat
 # Instantiate the OpenAIChat class
 chat = OpenAIChat()
-# Set up the configuration
-chat.save_config(email, password, webdriver_path, chrome_path, user_data_dir)
-# Load the configuration
-email, password, webdriver_path, chrome_path, user_data_dir, access_token, cookie = chat.load_config()
-# Start a chat
-response = chat.start(prompt)
-# Print the response
-print(response)
+# Set up the prompt
+prompt = "Your prompt here"
+# Return the chat response
+result = chat.start(prompt)
+# Try again with a cookie bypass if error detected (this will be redundant soon)
+if(not result):
+	result = chat.start(prompt, True)
 ```
 ## Requirements
 OpenAIAPIGrabber has the following requirements:
