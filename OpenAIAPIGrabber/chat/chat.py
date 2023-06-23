@@ -126,21 +126,38 @@ class OpenAIChat:
 
     def push_data(self, message, parent_thread_id, message_id):
         for thread in self.data:
-            if thread['parent_thread_id'] == parent_thread_id:
-                thread['messages'].append({'message_id': message_id, 'message': message})
+            if thread['message_id'] == message_id:
+                thread['messages'].append({'parent_thread_id': parent_thread_id, 'message': message})
+                self.save_data()
                 return
-        self.data.append({'parent_thread_id': parent_thread_id, 'messages': [{'message_id': message_id, 'message': message}]})
+        self.data.append({'message_id': message_id, 'messages': [{'parent_thread_id': parent_thread_id, 'message': message}]})
         self.save_data()
 
     def reply_to_message(self, prompt, parent_thread_id, message_id):
         for thread in self.data:
-            if thread['parent_thread_id'] == parent_thread_id:
+            if thread['message_id'] == message_id:
                 messages = thread['messages']
                 for message in messages:
-                    if message['message_id'] == message_id:
+                    if message['parent_thread_id'] == parent_thread_id:
                         reply = self.reply(prompt, parent_thread_id, message_id)
 
-    def reply(self, prompt, id, conversation_id):
+    def iterate_threads_and_reply(self):
+        for thread in self.data:
+            message_id = thread['message_id']
+            messages = thread['messages']
+            for message in messages:
+                parent_thread_id = message['parent_thread_id']
+                content = message['message']
+                print(content)
+                reply_choice = input("Do you want to reply to this message? (y/n): ")
+                if reply_choice.lower() == 'y':
+                    prompt = input("Enter your reply prompt: ")
+                    reply = self.reply(prompt, parent_thread_id, message_id)
+                    if reply:
+                        print("Bot's Reply:", reply)
+                print("------------------")
+
+    def reply(self, prompt, id, conversation_id, retry=False):
         headers = {
             'Authorization': f'Bearer {self.access_token}',
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36',
@@ -179,10 +196,14 @@ class OpenAIChat:
             self.push_data(data[0], data[1], data[2])
             return data[0]
         else:
-            print('Error:', response.status_code)
-            return None
+            if(retry):
+                print('Error:', response.status_code)
+                return None
+            else:
+                self.login()
+                self.reply(prompt, id, conversation_id, True)
 
-    def chat(self, prompt, autoDelete=True):
+    def chat(self, prompt, autoDelete=True, retry=False):
         headers = {
             'Authorization': f'Bearer {self.access_token}',
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36',
@@ -223,8 +244,21 @@ class OpenAIChat:
                 self.push_data(data[0], data[1], data[2])
             return data[0]
         else:
-            print('Error:', response.status_code)
-            return None
+            if(retry):
+                print('Error:', response.status_code)
+                return None
+            else:
+                self.login()
+                self.chat(prompt, autoDelete, True)
+
+    def login(self):
+        self.load_config()
+        if not self.email or not self.password:
+            self.email = input("Enter your email: ")
+            self.password = input("Enter your password: ")
+        chatToken = OpenAILoader(self.email, self.password, self.webdriver_path, self.chrome_path, self.user_data_dir)
+        self.access_token, self.cookie = chatToken.login()
+        self.save_config()
 
     def start(self, prompt, autoDelete=True):
         self.load_config()
@@ -232,16 +266,6 @@ class OpenAIChat:
             self.email = input("Enter your email: ")
             self.password = input("Enter your password: ")
         if(not self.access_token or not self.cookie):
-            chatToken = OpenAILoader(self.email, self.password, self.webdriver_path, self.chrome_path, self.user_data_dir)
-            self.access_token, self.cookie = chatToken.login()
-            self.save_config()
+            login()
         result = self.chat(prompt, autoDelete)
-        if(result):
-            return result
-        else:
-            chatToken = OpenAILoader(self.email, self.password, self.webdriver_path, self.chrome_path, self.user_data_dir)
-            self.access_token, self.cookie = chatToken.login()
-            self.save_config()
-            result = self.chat(prompt, autoDelete)
-            return result
-        return
+        return result
