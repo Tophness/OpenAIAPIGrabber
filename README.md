@@ -20,10 +20,6 @@ Firefox (Untested):
 ## Installation
 You can install OpenAIAPIGrabber using pip. Run the following command:
 ```bash
-pip install OpenAIAPIGrabber
-```
-or 
-```bash
 pip install git+https://github.com/Tophness/OpenAIAPIGrabber
 ```
 ## Usage
