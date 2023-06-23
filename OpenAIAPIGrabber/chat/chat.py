@@ -271,6 +271,6 @@ class OpenAIChat:
             self.email = input("Enter your email: ")
             self.password = input("Enter your password: ")
         if(not self.access_token or not self.cookie):
-            login()
+            self.login()
         result = self.chat(prompt, autoDelete)
         return result
