@@ -201,7 +201,7 @@ class OpenAIChat:
                 return None
             else:
                 self.login()
-                self.reply(prompt, id, conversation_id, True)
+                return self.reply(prompt, id, conversation_id, True)
 
     def chat(self, prompt, autoDelete=True, retry=False):
         headers = {
@@ -249,7 +249,7 @@ class OpenAIChat:
                 return None
             else:
                 self.login()
-                self.chat(prompt, autoDelete, True)
+                return self.chat(prompt, autoDelete, True)
 
     def login(self):
         self.load_config()
