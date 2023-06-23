@@ -96,7 +96,35 @@ class OpenAIChat:
             return match.group(0)
         return None
 
-    def push_data(self, message, message_id, parent_thread_id):
+    def deletechat(self, id):
+        url = 'https://chat.openai.com/backend-api/conversation/' + str(id)
+        headers = {
+            'Authorization': f'Bearer {self.access_token}',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36',
+            'Accept': 'text/event-stream',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Content-Type': 'application/json',
+            'Referer': 'https://chat.openai.com/',
+            'Alt-Used': 'chat.openai.com',
+            'Connection': 'keep-alive',
+            'Cookie': self.cookie,
+            'Origin': 'https://chat.openai.com',
+            'Sec-Fetch-Dest': 'empty',
+            'Sec-Fetch-Mode': 'cors',
+            'Sec-Fetch-Site': 'same-origin',
+            'TE': 'trailers'
+        }
+        payload = {
+            'is_visible': False
+        }
+        response = requests.patch(url, headers=headers, json=payload)
+        if response.status_code == 200:
+            return None
+        else:
+            raise Exception(response.text)
+
+    def push_data(self, message, parent_thread_id, message_id):
         for thread in self.data:
             if thread['parent_thread_id'] == parent_thread_id:
                 thread['messages'].append({'message_id': message_id, 'message': message})
@@ -104,13 +132,13 @@ class OpenAIChat:
         self.data.append({'parent_thread_id': parent_thread_id, 'messages': [{'message_id': message_id, 'message': message}]})
         self.save_data()
 
-    def reply_to_message(self, prompt, message_id, parent_thread_id, model):
+    def reply_to_message(self, prompt, parent_thread_id, message_id):
         for thread in self.data:
             if thread['parent_thread_id'] == parent_thread_id:
                 messages = thread['messages']
                 for message in messages:
                     if message['message_id'] == message_id:
-                        reply = self.reply(prompt, message_id, parent_thread_id)
+                        reply = self.reply(prompt, parent_thread_id, message_id)
 
     def reply(self, prompt, id, conversation_id):
         headers = {
@@ -154,7 +182,7 @@ class OpenAIChat:
             print('Error:', response.status_code)
             return None
 
-    def chat(self, prompt):
+    def chat(self, prompt, autoDelete=True):
         headers = {
             'Authorization': f'Bearer {self.access_token}',
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36',
@@ -189,13 +217,16 @@ class OpenAIChat:
         if response.status_code == 200:
             response_text = response.text
             data = self.get_second_last_chunk_text(response_text)
-            self.push_data(data[0], data[1], data[2])
+            if(autoDelete):
+                self.deletechat(data[2])
+            else:
+                self.push_data(data[0], data[1], data[2])
             return data[0]
         else:
             print('Error:', response.status_code)
             return None
 
-    def start(self, prompt):
+    def start(self, prompt, autoDelete=True):
         self.load_config()
         if not self.email or not self.password:
             self.email = input("Enter your email: ")
@@ -204,13 +235,13 @@ class OpenAIChat:
             chatToken = OpenAILoader(self.email, self.password, self.webdriver_path, self.chrome_path, self.user_data_dir)
             self.access_token, self.cookie = chatToken.login()
             self.save_config()
-        result = self.chat(prompt)
+        result = self.chat(prompt, autoDelete)
         if(result):
             return result
         else:
             chatToken = OpenAILoader(self.email, self.password, self.webdriver_path, self.chrome_path, self.user_data_dir)
             self.access_token, self.cookie = chatToken.login()
             self.save_config()
-            result = self.chat(prompt)
+            result = self.chat(prompt, autoDelete)
             return result
         return
