@@ -129,6 +129,7 @@ class OpenAIChat:
             raise Exception(response.text)
 
     def push_data(self, message, conversation_id, parent_message_id):
+        self.lastReply = {'conversation_id': conversation_id, 'parent_message_id': parent_message_id, 'message': message}
         for thread in self.data:
             if thread['conversation_id'] == conversation_id:
                 thread['messages'].append({'parent_message_id': parent_message_id, 'message': message})
@@ -136,7 +137,6 @@ class OpenAIChat:
                 return
         self.data.append({'conversation_id': conversation_id, 'messages': [{'parent_message_id': parent_message_id, 'message': message}]})
         self.save_data()
-        self.lastReply = {'conversation_id': conversation_id, 'parent_message_id': parent_message_id, 'message': message}
 
     def replyLast(self, prompt):
         return self.reply(prompt, self.lastReply['conversation_id'], self.lastReply['parent_message_id'])
