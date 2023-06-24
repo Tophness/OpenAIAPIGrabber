@@ -69,13 +69,19 @@ class OpenAIChat:
         if os.path.isfile(msgs_file):
             with open(msgs_file, 'r') as file:
                 self.data = yaml.safe_load(file)
+        lastItem = self.data[-1]
+        conversation_id = lastItem['conversation_id']
+        last_message = lastItem['messages'][-1]
+        parent_message_id = last_message['parent_message_id']
+        message = last_message['message'][0]
+        self.lastReply = {'conversation_id': conversation_id, 'parent_message_id': parent_message_id, 'message': message}
 
     def save_data(self):
         with open(msgs_file, 'w') as file:
             yaml.dump(self.data, file)
 
-    def get_second_last_chunk_text(self, data):
-        chunks = data.split('\n\n')
+    def get_second_last_chunk_text(self, cdata):
+        chunks = cdata.split('\n\n')
         if len(chunks) < 3:
             return None
         second_last_chunk = chunks[-3]
@@ -90,9 +96,9 @@ class OpenAIChat:
             print('Error parsing JSON:', error)
         return None
 
-    def extract_url(self, data):
+    def extract_url(self, udata):
         regex = re.compile(r'(https?://[^\s]+)')
-        match = regex.search(data)
+        match = regex.search(udata)
         if match:
             return match.group(0)
         return None
