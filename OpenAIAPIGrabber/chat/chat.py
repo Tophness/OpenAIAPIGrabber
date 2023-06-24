@@ -84,8 +84,8 @@ class OpenAIChat:
             regex = re.compile(r'"id": "([^"]+)",.*"conversation_id": "([^"]+)"')
             match = regex.search(second_last_chunk)
             if match:
-                id, conversation_id = match.group(1, 2)
-                return [json_data['message']['content']['parts'], id, conversation_id]
+                parent_message_id, conversation_id = match.group(1, 2)
+                return [json_data['message']['content']['parts'], conversation_id, parent_message_id]
         except json.JSONDecodeError as error:
             print('Error parsing JSON:', error)
         return None
@@ -96,6 +96,9 @@ class OpenAIChat:
         if match:
             return match.group(0)
         return None
+
+    def deleteLast(self):
+        return self.deletechat(self.lastReply['conversation_id'])
 
     def deletechat(self, id):
         url = 'https://chat.openai.com/backend-api/conversation/' + str(id)
@@ -125,44 +128,44 @@ class OpenAIChat:
         else:
             raise Exception(response.text)
 
-    def push_data(self, message, parent_thread_id, message_id):
+    def push_data(self, message, conversation_id, parent_message_id):
         for thread in self.data:
-            if thread['message_id'] == message_id:
-                thread['messages'].append({'parent_thread_id': parent_thread_id, 'message': message})
+            if thread['conversation_id'] == conversation_id:
+                thread['messages'].append({'parent_message_id': parent_message_id, 'message': message})
                 self.save_data()
                 return
-        self.data.append({'message_id': message_id, 'messages': [{'parent_thread_id': parent_thread_id, 'message': message}]})
+        self.data.append({'conversation_id': conversation_id, 'messages': [{'parent_message_id': parent_message_id, 'message': message}]})
         self.save_data()
-        self.lastReply = {'message_id': message_id, 'parent_thread_id': parent_thread_id, 'message': message}
+        self.lastReply = {'conversation_id': conversation_id, 'parent_message_id': parent_message_id, 'message': message}
 
     def replyLast(self, prompt):
-        return self.reply(prompt, self.lastReply['parent_thread_id'], self.lastReply['message_id'])
+        return self.reply(prompt, self.lastReply['conversation_id'], self.lastReply['parent_message_id'])
 
-    def reply_to_message(self, prompt, parent_thread_id, message_id):
+    def reply_to_message(self, prompt, conversation_id, parent_message_id):
         for thread in self.data:
-            if thread['message_id'] == message_id:
+            if thread['conversation_id'] == conversation_id:
                 messages = thread['messages']
                 for message in messages:
-                    if message['parent_thread_id'] == parent_thread_id:
-                        reply = self.reply(prompt, parent_thread_id, message_id)
+                    if message['parent_message_id'] == parent_message_id:
+                        reply = self.reply(prompt, conversation_id, parent_message_id)
 
     def iterate_threads_and_reply(self):
         for thread in self.data:
-            message_id = thread['message_id']
+            conversation_id = thread['conversation_id']
             messages = thread['messages']
             for message in messages:
-                parent_thread_id = message['parent_thread_id']
+                parent_message_id = message['parent_message_id']
                 content = message['message']
                 print(content)
                 reply_choice = input("Do you want to reply to this message? (y/n): ")
                 if reply_choice.lower() == 'y':
                     prompt = input("Enter your reply prompt: ")
-                    reply = self.reply(prompt, parent_thread_id, message_id)
+                    reply = self.reply(prompt, conversation_id, parent_message_id)
                     if reply:
                         print("Bot's Reply:", reply)
                 print("------------------")
 
-    def reply(self, prompt, id, conversation_id, retry=False):
+    def reply(self, prompt, conversation_id, parent_message_id, retry=False):
         headers = {
             'Authorization': f'Bearer {self.access_token}',
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36',
@@ -191,22 +194,22 @@ class OpenAIChat:
                 'role': 'user'
             }],
             'model': self.model,
-            'parent_message_id': id,
+            'parent_message_id': parent_message_id,
             'conversation_id': conversation_id
         }
         response = requests.post('https://chat.openai.com/backend-api/conversation', headers=headers, json=payload)
         if response.status_code == 200:
             response_text = response.text
-            data = self.get_second_last_chunk_text(response_text)
-            self.push_data(data[0], data[1], data[2])
-            return data[0]
+            rdata = self.get_second_last_chunk_text(response_text)
+            self.push_data(rdata[0], rdata[1], rdata[2])
+            return rdata[0]
         else:
             if(retry):
                 print('Error:', response.status_code)
                 return None
             else:
                 self.login()
-                return self.reply(prompt, id, conversation_id, True)
+                return self.reply(prompt, conversation_id, parent_message_id, True)
 
     def chat(self, prompt, autoDelete=False, retry=False):
         headers = {
@@ -242,12 +245,12 @@ class OpenAIChat:
         response = requests.post('https://chat.openai.com/backend-api/conversation', headers=headers, json=payload)
         if response.status_code == 200:
             response_text = response.text
-            data = self.get_second_last_chunk_text(response_text)
+            rdata = self.get_second_last_chunk_text(response_text)
             if(autoDelete):
-                self.deletechat(data[2])
+                self.deletechat(rdata[1])
             else:
-                self.push_data(data[0], data[1], data[2])
-            return data[0]
+                self.push_data(rdata[0], rdata[1], rdata[2])
+            return rdata[0]
         else:
             if(retry):
                 print('Error:', response.status_code)
