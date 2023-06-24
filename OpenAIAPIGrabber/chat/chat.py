@@ -126,7 +126,7 @@ class OpenAIChat:
         if response.status_code == 200:
             return None
         else:
-            raise Exception(response.text)
+            raise Exception(response.status_code)
 
     def push_data(self, message, conversation_id, parent_message_id):
         self.lastReply = {'conversation_id': conversation_id, 'parent_message_id': parent_message_id, 'message': message}
