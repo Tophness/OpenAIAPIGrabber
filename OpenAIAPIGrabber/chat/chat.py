@@ -69,12 +69,13 @@ class OpenAIChat:
         if os.path.isfile(msgs_file):
             with open(msgs_file, 'r') as file:
                 self.data = yaml.safe_load(file)
-        lastItem = self.data[-1]
-        conversation_id = lastItem['conversation_id']
-        last_message = lastItem['messages'][-1]
-        parent_message_id = last_message['parent_message_id']
-        message = last_message['message'][0]
-        self.lastReply = {'conversation_id': conversation_id, 'parent_message_id': parent_message_id, 'message': message}
+        if(len(self.data) > 0):
+            lastItem = self.data[-1]
+            conversation_id = lastItem['conversation_id']
+            last_message = lastItem['messages'][-1]
+            parent_message_id = last_message['parent_message_id']
+            message = last_message['message'][0]
+            self.lastReply = {'conversation_id': conversation_id, 'parent_message_id': parent_message_id, 'message': message}
 
     def save_data(self):
         with open(msgs_file, 'w') as file:
