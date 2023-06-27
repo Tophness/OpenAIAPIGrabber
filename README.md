@@ -32,9 +32,6 @@ chat = OpenAIChat()
 prompt = "Your prompt here"
 # Return the chat response
 result = chat.start(prompt)
-# Try again with a cookie bypass if error detected (this will be redundant soon)
-if(not result):
-	result = chat.start(prompt, True)
 ```
 ## Requirements
 OpenAIAPIGrabber has the following requirements:
