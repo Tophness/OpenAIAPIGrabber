@@ -74,7 +74,7 @@ class OpenAIChat:
             chrome_beta_dir = self.get_chrome_install_location(p64bit)
             if(chrome_beta_dir):
                 chrome_beta_path = os.path.join(chrome_beta_dir, "chrome.exe")
-                if(self.get_version_via_com(chrome_beta_path) and self.get_version_via_com(chrome_beta_path).split('.')[0] > 114):
+                if(self.get_version_via_com(chrome_beta_path) and int(self.get_version_via_com(chrome_beta_path).split('.')[0]) > 114):
                     self.chrome_path = chrome_beta_path
                 else:
                     self.download_chrome(p64bit)
