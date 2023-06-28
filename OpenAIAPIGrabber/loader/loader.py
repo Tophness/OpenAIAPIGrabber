@@ -6,6 +6,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from undetected_chromedriver import Chrome
 import json
 import time
+import os.path
 
 class OpenAILoader:
     def __init__(self, email, password, webdriver_path, chrome_path, user_data_dir):
@@ -15,6 +16,10 @@ class OpenAILoader:
         self.chrome_path = chrome_path
         self.user_data_dir = user_data_dir
         self.driver = None
+        if(not os.path.isfile('chromedriver.exe')):
+            from get_chrome_driver import GetChromeDriver
+            get_driver = GetChromeDriver()
+            get_driver.auto_download(extract=True)
 
     def get_access_token(self):
         self.driver.get("https://chat.openai.com/api/auth/session")
@@ -45,10 +50,14 @@ class OpenAILoader:
     def login(self):
         try:
             chrome_options = Options()
-            chrome_options.binary_location = self.chrome_path
             chrome_options.headless=True
-            chrome_options.user_data_dir = self.user_data_dir
-            self.driver = Chrome(options=chrome_options, executable_path=self.webdriver_path)
+            if(self.user_data_dir):
+                chrome_options.user_data_dir = self.user_data_dir
+            if(self.chrome_path):
+                chrome_options.binary_location = self.chrome_path
+            if(self.webdriver_path):
+                chrome_options.executable_path = self.webdriver_path
+            self.driver = Chrome(options=chrome_options)
 
             access_token = self.get_access_token()
             cookie = ''

@@ -19,9 +19,9 @@ class OpenAIChat:
         self.model = "text-davinci-002-render-sha"
         self.email = None
         self.password = None
-        self.webdriver_path = 'chromedriver.exe'
-        self.chrome_path = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'
-        self.user_data_dir = os.getenv('LOCALAPPDATA') + '\\Google\\Chrome\\User Data\\Default'
+        self.webdriver_path = ''
+        self.chrome_path = ''
+        self.user_data_dir = ''
         self.access_token = None
         self.cookie = None
         self.lastReply = None
@@ -56,9 +56,13 @@ class OpenAIChat:
         if(openai_section):
             self.email = openai_section.get('email')
             self.password = openai_section.get('password')
-            self.webdriver_path = openai_section.get('webdriver_path')
-            self.chrome_path = openai_section.get('chrome_path')
-            self.user_data_dir = openai_section.get('user_data_dir')
+            self.webdriver_path = openai_section.get('webdriver_path', '')
+            self.chrome_path = openai_section.get('chrome_path', '')
+            self.user_data_dir = openai_section.get('user_data_dir', '')
+            if(not self.user_data_dir):
+                localuserdir = os.getenv('LOCALAPPDATA') + '\\Google\\Chrome\\User Data\\Default'
+                if(os.path.isdir(localuserdir)):
+                    self.user_data_dir = localuserdir
         if(access_section):
             self.access_token = access_section.get('access_token', '')
             self.cookie = access_section.get('cookie', '')
