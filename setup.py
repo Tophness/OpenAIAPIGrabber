@@ -15,7 +15,8 @@ setup(
         'undetected-chromedriver==3.5.0',
         'requests==2.31.0',
         'PyYAML==6.0',
-        'get-chrome-driver==1.3.12'
+        'get-chrome-driver==1.3.12',
+        'pypiwin32==223'
     ],
     classifiers=[
         'Development Status :: 3 - Alpha',

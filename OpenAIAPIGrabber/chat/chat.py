@@ -8,6 +8,9 @@ import configparser
 import base64
 import os
 import yaml
+import zipfile
+import io
+from win32com.client import Dispatch
 
 config_file = 'config.ini'
 msgs_file = 'messages.yaml'
@@ -26,8 +29,68 @@ class OpenAIChat:
         self.cookie = None
         self.lastReply = None
 
+    def download_and_extract_file(self, url):
+        print("Downloading chrome..")
+        response = requests.get(url)
+        if response.status_code == 200:
+            with zipfile.ZipFile(io.BytesIO(response.content)) as zip_file:
+                zip_file.extractall(os.getcwd())
+            print("Download succeeded.")
+            return True
+        else:
+            print("Failed to download the file.")
+            return False
+
+    def get_version_via_com(self, filename):
+        parser = Dispatch("Scripting.FileSystemObject")
+        version = parser.GetFileVersion(filename)
+        return version
+
+    def get_chrome_install_location(self, p64bit):
+        import winreg
+        if p64bit:
+            registry_path = r"Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\Google Chrome Beta"
+        else:
+            registry_path = r"Software\Microsoft\Windows\CurrentVersion\Uninstall\Google Chrome Beta"
+        try:
+            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, registry_path) as key:
+                install_location, _ = winreg.QueryValueEx(key, "InstallLocation")
+                return install_location
+        except OSError:
+            return None
+
+    def download_chrome(self, p64bit):
+        if(p64bit):
+            if(self.download_and_extract_file('https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/115.0.5790.24/win64/chrome-win64.zip')):
+                self.chrome_path = os.path.join('chrome-win64', "chrome.exe")
+        else:
+            if(self.download_and_extract_file('https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/115.0.5790.24/win32/chrome-win32.zip')):
+                self.chrome_path = os.path.join('chrome-win32', "chrome.exe")
+
+    def set_defaults(self):
+        if(self.chrome_path == ''):
+            import platform
+            p64bit = platform.machine().endswith('64')
+            chrome_beta_dir = self.get_chrome_install_location(p64bit)
+            if(chrome_beta_dir):
+                chrome_beta_path = os.path.join(chrome_beta_dir, "chrome.exe")
+                if(self.get_version_via_com(chrome_beta_path) and self.get_version_via_com(chrome_beta_path).split('.')[0] > 114):
+                    self.chrome_path = chrome_beta_path
+                else:
+                    self.download_chrome(p64bit)
+            else:
+                self.download_chrome(p64bit)
+        if(self.user_data_dir == ''):
+            chrome_types = ['Chrome Beta', 'Chrome Dev', 'Chrome']
+            for chrome_type in chrome_types:
+                localuserdir = os.path.join(os.getenv("LOCALAPPDATA"), "Google", chrome_type, "User Data", "Default")
+                if(os.path.isdir(localuserdir)):
+                    self.user_data_dir = localuserdir
+                    return
+
     def save_config(self):
         config = configparser.ConfigParser()
+        self.set_defaults()
         config['OpenAI'] = {
             'email': self.email,
             'password': self.password,
@@ -59,10 +122,7 @@ class OpenAIChat:
             self.webdriver_path = openai_section.get('webdriver_path', '')
             self.chrome_path = openai_section.get('chrome_path', '')
             self.user_data_dir = openai_section.get('user_data_dir', '')
-            if(not self.user_data_dir):
-                localuserdir = os.getenv('LOCALAPPDATA') + '\\Google\\Chrome\\User Data\\Default'
-                if(os.path.isdir(localuserdir)):
-                    self.user_data_dir = localuserdir
+        self.set_defaults()
         if(access_section):
             self.access_token = access_section.get('access_token', '')
             self.cookie = access_section.get('cookie', '')
