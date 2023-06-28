@@ -19,7 +19,7 @@ class OpenAILoader:
         if(not os.path.isfile('chromedriver.exe')):
             from get_chrome_driver import GetChromeDriver
             get_driver = GetChromeDriver()
-            get_driver.auto_download(extract=True)
+            get_driver.download_version('115.0.5790.24', extract=True)
 
     def get_access_token(self):
         self.driver.get("https://chat.openai.com/api/auth/session")
