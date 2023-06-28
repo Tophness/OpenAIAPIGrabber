@@ -19,8 +19,8 @@ class OpenAIChat:
         self.model = "text-davinci-002-render-sha"
         self.email = None
         self.password = None
-        self.webdriver_path = 'C:\\Program Files\\Google\\Application\\Chrome\\chromedriver.exe'
-        self.chrome_path = 'C:\\Program Files\\Google\\Application\\Chrome\\chrome.exe'
+        self.webdriver_path = 'chromedriver.exe'
+        self.chrome_path = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'
         self.user_data_dir = os.getenv('LOCALAPPDATA') + '\\Google\\Chrome\\User Data\\Default'
         self.access_token = None
         self.cookie = None
